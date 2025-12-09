@@ -1,6 +1,7 @@
 package com.hideseek.viewmodel;
 
 import com.hideseek.model.*;
+import java.awt.Image;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -13,7 +14,11 @@ public class GameViewModel implements Runnable {
     private List<Alien> aliens;
     private List<Bullet> bullets;
     private List<Obstacle> obstacles;
-    
+
+    // Resources Images
+    private List<Image> alienImages;
+    private List<Image> meteorImages;
+
     // Game Settings
     private int screenWidth = 800;
     private int screenHeight = 600;
@@ -28,8 +33,11 @@ public class GameViewModel implements Runnable {
     private boolean isMovingUp = false;
     private boolean isMovingDown = false;
 
-    public GameViewModel(GameEventListener listener) {
+    // Konstruktor menerima List Gambar
+    public GameViewModel(GameEventListener listener, List<Image> alienImages, List<Image> meteorImages) {
         this.eventListener = listener;
+        this.alienImages = alienImages;
+        this.meteorImages = meteorImages;
         initGame();
     }
 
@@ -37,23 +45,38 @@ public class GameViewModel implements Runnable {
         player = new Player(screenWidth / 2 - 25, screenHeight / 2 - 25, 50, 50, null);
         aliens = new ArrayList<>();
         bullets = new ArrayList<>();
-        obstacles = new ArrayList<>(); 
-        
-        generateObstacles(); // Panggil fungsi buat batu
+        obstacles = new ArrayList<>();
+
+        // Generate 5 batu awal
+        for (int i = 0; i < 5; i++) {
+            spawnSingleObstacle();
+        }
     }
 
-    // Fungsi untuk generate batu acak
-    private void generateObstacles() {
-        // Buat misal 5 batu acak
-        for (int i = 0; i < 5; i++) {
+    // Helper method untuk spawn 1 batu di posisi acak dengan gambar acak
+    private void spawnSingleObstacle() {
+        boolean validPosition = false;
+        int maxAttempts = 10; // Coba 10 kali mencari posisi kosong
+        int attempts = 0;
+
+        while (!validPosition && attempts < maxAttempts) {
             int x = random.nextInt(screenWidth - 60);
-            int y = random.nextInt(screenHeight - 200) + 50; // Jangan terlalu dekat batas atas/bawah
-            
-            // Cek agar tidak menumpuk di posisi spawn player
-            Rectangle obstacleRect = new Rectangle(x, y, 60, 60);
-            if (!obstacleRect.intersects(player.getBounds())) {
-                obstacles.add(new Obstacle(x, y, 60, 60, null));
+            int y = random.nextInt(screenHeight - 200) + 50;
+
+            Rectangle newRect = new Rectangle(x, y, 60, 60);
+
+            // Cek tabrakan dengan player agar tidak spawn menimpa player
+            if (!newRect.intersects(player.getBounds())) {
+                // Pilih gambar acak
+                Image randomImg = null;
+                if (meteorImages != null && !meteorImages.isEmpty()) {
+                    randomImg = meteorImages.get(random.nextInt(meteorImages.size()));
+                }
+
+                obstacles.add(new Obstacle(x, y, 60, 60, randomImg));
+                validPosition = true;
             }
+            attempts++;
         }
     }
 
@@ -72,7 +95,7 @@ public class GameViewModel implements Runnable {
                 eventListener.onGameUpdate();
             }
             try {
-                Thread.sleep(16); 
+                Thread.sleep(16);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -82,7 +105,7 @@ public class GameViewModel implements Runnable {
     private void updateGame() {
         movePlayer();
 
-        if (random.nextInt(100) < 2) { 
+        if (random.nextInt(100) < 2) {
             spawnAlien();
         }
 
@@ -101,47 +124,63 @@ public class GameViewModel implements Runnable {
         if (isMovingUp && player.getY() > 0) player.setY(player.getY() - speed);
         if (isMovingDown && player.getY() < screenHeight - player.getHeight()) player.setY(player.getY() + speed);
 
+        // MODIFIKASI: Mengganti 'for' loop dengan 'Iterator' (while) agar 'break' valid
         // Cek Tabrakan Player dengan Batu
-        for (Obstacle obs : obstacles) {
+        Iterator<Obstacle> it = obstacles.iterator();
+        while (it.hasNext()) {
+            Obstacle obs = it.next();
             if (player.getBounds().intersects(obs.getBounds())) {
                 // Batalkan gerakan (tembok solid)
                 player.setX(oldX);
                 player.setY(oldY);
-                break; 
+                break; // Break dalam while diperbolehkan
             }
         }
     }
 
     private void spawnAlien() {
         int randomX = random.nextInt(screenWidth - 40);
-        aliens.add(new Alien(randomX, screenHeight, 40, 40, null));
+
+        // 1. Siapkan variabel gambar
+        Image randomImage = null;
+
+        // 2. Cek apakah list gambar ada isinya
+        if (alienImages != null && !alienImages.isEmpty()) {
+            // 3. Ambil acak salah satu gambar
+            int randomIndex = random.nextInt(alienImages.size());
+            randomImage = alienImages.get(randomIndex);
+        }
+
+        // 4. Masukkan 'randomImage' ke konstruktor Alien
+        aliens.add(new Alien(randomX, screenHeight, 40, 40, randomImage));
     }
 
     private void updateAliens() {
         Iterator<Alien> it = aliens.iterator();
         while (it.hasNext()) {
             Alien alien = it.next();
-            
+
             // Simpan posisi lama sebelum bergerak
             int oldY = alien.getY();
-            
+
             // Coba gerakkan Alien ke ATAS
             alien.setY(alien.getY() - 3);
 
-            // 1. Cek Tabrakan dengan Batu 
+            // MODIFIKASI: Mengganti 'for' loop dengan 'Iterator' (while) agar 'break' valid
+            // 1. Cek Tabrakan dengan Batu
             boolean hitRock = false;
-            for (Obstacle obs : obstacles) {
+            Iterator<Obstacle> obsIt = obstacles.iterator();
+            while (obsIt.hasNext()) {
+                Obstacle obs = obsIt.next();
                 if (alien.getBounds().intersects(obs.getBounds())) {
                     // Jika nabrak batu, batalkan gerakan (Alien tertahan di balik batu)
                     alien.setY(oldY);
                     hitRock = true;
-                    break; 
+                    break; // Break dalam while diperbolehkan
                 }
             }
 
             // 2. Cek Tabrakan dengan Player (Game Over)
-            // Hanya cek jika alien berhasil bergerak (tidak tertahan batu)
-            // Atau tetap cek, karena jika player mepet batu, alien di seberang batu tidak boleh membunuh player
             if (!hitRock && alien.getBounds().intersects(player.getBounds())) {
                 isRunning = false;
                 if (eventListener != null) eventListener.onGameOver(player.getScore());
@@ -152,7 +191,7 @@ public class GameViewModel implements Runnable {
                 it.remove();
                 continue; // Lanjut ke alien berikutnya
             }
-            
+
             // 4. LOGIKA MENEMBAK: Alien menembak secara acak
             if (random.nextInt(100) < 1) { // 1% chance
                 // Alien menembak lurus ke atas (ke arah player)
@@ -162,49 +201,87 @@ public class GameViewModel implements Runnable {
     }
 
     private void updateBullets() {
+        // Variabel untuk menghitung jumlah batu yang hancur di frame ini
+        // Digunakan untuk me-respawn batu baru di akhir method
+        int obstaclesDestroyedCount = 0;
+
         Iterator<Bullet> it = bullets.iterator();
         while (it.hasNext()) {
             Bullet bullet = it.next();
-            boolean removeBullet = false;
+            boolean isBulletDead = false; // Penanda apakah peluru harus dihapus
 
-            // Gerakan Peluru
+            // --- LOGIKA PELURU MUSUH (ALIEN) ---
             if (bullet.isEnemyBullet()) {
+                // 1. Gerakkan ke Atas
                 bullet.setY(bullet.getY() - 7);
+
+                // 2. Cek Keluar Layar Atas (MEKANISME MENAMBAH AMMO)
+                if (bullet.getY() + bullet.getHeight() < -20) {
+                    player.addAmmo(1);       // Tambah Ammo
+                    player.addAmmoMissed();  // Catat Statistik
+                    it.remove();             // Hapus langsung dari memori
+                    continue;                // Lanjut ke peluru berikutnya
+                }
+
+                // 3. Cek Kena Player
                 if (bullet.getBounds().intersects(player.getBounds())) {
                     isRunning = false;
                     if (eventListener != null) eventListener.onGameOver(player.getScore());
                 }
-                if (bullet.getY() + bullet.getHeight() < 0) {
-                    player.addAmmo(1);
-                    player.addAmmoMissed();
-                    removeBullet = true;
-                }
-            } else {
+            }
+
+            // --- LOGIKA PELURU PEMAIN ---
+            else {
+                // 1. Gerakkan ke Bawah
                 bullet.setY(bullet.getY() + 7);
+
+                // 2. Cek Kena Alien
                 Iterator<Alien> alienIt = aliens.iterator();
                 while (alienIt.hasNext()) {
                     Alien alien = alienIt.next();
                     if (bullet.getBounds().intersects(alien.getBounds())) {
-                        alienIt.remove();
-                        player.addScore(10);
-                        removeBullet = true;
+                        alienIt.remove();    // Alien mati
+                        player.addScore(10); // Tambah skor
+                        isBulletDead = true; // Tandai peluru hancur
                         break;
                     }
                 }
-                if (bullet.getY() > screenHeight) removeBullet = true;
-            }
 
-            // Cek Peluru kena Batu (Hancur)
-            for (Obstacle obs : obstacles) {
-                if (bullet.getBounds().intersects(obs.getBounds())) {
-                    removeBullet = true; // Peluru hancur kena batu
-                    break;
+                // 3. Cek Keluar Layar Bawah
+                if (bullet.getY() > screenHeight) {
+                    isBulletDead = true;
                 }
             }
 
-            if (removeBullet) {
+            // --- LOGIKA TABRAKAN BATU (Berlaku untuk Kedua Peluru) ---
+            // Hanya cek jika peluru belum mati
+            if (!isBulletDead) {
+                Iterator<Obstacle> obsIt = obstacles.iterator();
+                while (obsIt.hasNext()) {
+                    Obstacle obs = obsIt.next();
+                    if (bullet.getBounds().intersects(obs.getBounds())) {
+                        obs.hit();           // Batu berkurang HP
+                        isBulletDead = true; // Peluru hancur
+
+                        if (obs.isDestroyed()) {
+                            obsIt.remove();  // Hapus batu lama
+                            obstaclesDestroyedCount++; // Tandai untuk spawn batu baru
+                        }
+                        break;
+                    }
+                }
+            }
+
+            // --- PENGHAPUSAN AKHIR PELURU ---
+            if (isBulletDead) {
                 it.remove();
             }
+        }
+
+        // --- RESPAWN BATU BARU ---
+        // Dilakukan di luar loop Iterator peluru untuk keamanan data
+        for (int i = 0; i < obstaclesDestroyedCount; i++) {
+            spawnSingleObstacle();
         }
     }
 
