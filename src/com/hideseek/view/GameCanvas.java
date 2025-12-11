@@ -130,7 +130,7 @@ public class GameCanvas extends JPanel implements GameEventListener, KeyListener
         // Jika ada gambar aset, gunakan g.drawImage(...). Untuk sekarang pakai kotak/lingkaran.
         g.fillOval(p.getX(), p.getY(), p.getWidth(), p.getHeight());
 
-        // 3. Gambar Alien (BARU: Menggunakan Image)
+        // 3. Gambar Alien
         for (Alien a : viewModel.getAliens()) {
             if (a.getImage() != null) {
                 // Gambar alien sesuai image yang sudah di-assign di ViewModel

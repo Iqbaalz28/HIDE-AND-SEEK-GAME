@@ -21,14 +21,14 @@ public class DB {
      */
     public DB() throws Exception {
         try {
-            // Memuat driver MySQL (opsional di JDBC baru, tapi baik untuk memastikan)
+            // Memuat driver MySQL
             Class.forName("com.mysql.cj.jdbc.Driver");
 
             // Membuat koneksi
             conn = DriverManager.getConnection(dbUrl);
             conn.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
         } catch (SQLException e) {
-            // Melempar error agar bisa ditangani di layer lain (misal: ViewModel)
+            // Melempar error agar bisa ditangani di layer lain
             throw e;
         }
     }

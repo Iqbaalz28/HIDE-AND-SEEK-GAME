@@ -124,7 +124,6 @@ public class GameViewModel implements Runnable {
         if (isMovingUp && player.getY() > 0) player.setY(player.getY() - speed);
         if (isMovingDown && player.getY() < screenHeight - player.getHeight()) player.setY(player.getY() + speed);
 
-        // MODIFIKASI: Mengganti 'for' loop dengan 'Iterator' (while) agar 'break' valid
         // Cek Tabrakan Player dengan Batu
         Iterator<Obstacle> it = obstacles.iterator();
         while (it.hasNext()) {
@@ -133,7 +132,7 @@ public class GameViewModel implements Runnable {
                 // Batalkan gerakan (tembok solid)
                 player.setX(oldX);
                 player.setY(oldY);
-                break; // Break dalam while diperbolehkan
+                break;
             }
         }
     }
@@ -166,7 +165,6 @@ public class GameViewModel implements Runnable {
             // Coba gerakkan Alien ke ATAS
             alien.setY(alien.getY() - 3);
 
-            // MODIFIKASI: Mengganti 'for' loop dengan 'Iterator' (while) agar 'break' valid
             // 1. Cek Tabrakan dengan Batu
             boolean hitRock = false;
             Iterator<Obstacle> obsIt = obstacles.iterator();
@@ -176,7 +174,7 @@ public class GameViewModel implements Runnable {
                     // Jika nabrak batu, batalkan gerakan (Alien tertahan di balik batu)
                     alien.setY(oldY);
                     hitRock = true;
-                    break; // Break dalam while diperbolehkan
+                    break;
                 }
             }
 
