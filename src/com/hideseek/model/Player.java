@@ -3,29 +3,19 @@ package com.hideseek.model;
 import java.awt.Image;
 
 /**
- * Kelas ini merepresentasikan karakter utama (Pemain) yang dikendalikan pengguna.
- * Sebagai turunan dari GameElement, Player mewarisi properti fisik (posisi dan gambar),
- * namun memiliki tanggung jawab tambahan untuk mengelola data statistik permainan secara real-time.
+ * Representasi karakter Pemain (Player).
+ *
+ * Dalam arsitektur Strict OOP, kelas ini adalah "Smart Model".
+ * Dia tidak hanya menyimpan data (skor/nyawa), tetapi juga memiliki logika perilaku
+ * seperti bagaimana cara bergerak agar tidak keluar layar dan bagaimana cara membidik musuh.
  */
 public class Player extends GameElement {
 
-    // Variabel status permainan yang bersifat dinamis (berubah terus-menerus).
-    private int ammo;       // Jumlah stok peluru yang dimiliki pemain.
-    private int score;      // Total skor yang telah dikumpulkan.
-    private int ammoMissed; // Statistik jumlah peluru musuh yang berhasil dihindari.
+    // Data statistik permainan
+    private int ammo;
+    private int score;
+    private int ammoMissed;
 
-    /**
-     * Konstruktor untuk inisialisasi awal pemain.
-     * Saat permainan baru dimulai dari nol, seluruh statistik diatur ke nilai default (0).
-     * Namun, jika fitur 'Load Game' aktif, nilai-nilai ini nanti akan ditimpa
-     * menggunakan metode Setter.
-     *
-     * @param x Posisi awal horizontal.
-     * @param y Posisi awal vertikal.
-     * @param width Lebar karakter.
-     * @param height Tinggi karakter.
-     * @param image Aset gambar visual karakter.
-     */
     public Player(int x, int y, int width, int height, Image image) {
         super(x, y, width, height, image);
         this.ammo = 0;
@@ -33,69 +23,81 @@ public class Player extends GameElement {
         this.ammoMissed = 0;
     }
 
-    // --- Logika Manipulasi Permainan (Gameplay Logic) ---
-
     /**
-     * Menambahkan stok peluru pemain.
-     * Metode ini biasanya dipanggil sebagai bentuk 'hadiah' (reward) ketika
-     * pemain berhasil melakukan manuver tertentu (misalnya menghindari peluru musuh).
+     * Logika Pergerakan Pemain.
+     * * Metode ini menerima status tombol yang ditekan, lalu menghitung posisi baru.
+     * Di sini juga terdapat logika validasi (Boundary Check) untuk memastikan
+     * pemain tidak berjalan menembus batas tepi layar.
      */
-    public void addAmmo(int amount) {
-        this.ammo += amount;
-    }
+    public void move(boolean left, boolean right, boolean up, boolean down, int screenW, int screenH) {
+        int speed = 5; // Kecepatan gerak piksel per frame
 
-    /**
-     * Mengurangi satu unit peluru saat pemain melakukan tembakan.
-     * Terdapat mekanisme pengecekan (validasi) untuk memastikan jumlah peluru
-     * tidak pernah bernilai negatif.
-     */
-    public void decreaseAmmo() {
-        if (this.ammo > 0) {
-            this.ammo--;
-        }
+        if (left && x > 0) x -= speed;
+        if (right && x < screenW - width) x += speed;
+        if (up && y > 0) y -= speed;
+        if (down && y < screenH - height) y += speed;
     }
 
     /**
-     * Menambahkan poin ke dalam skor total pemain.
-     * Dipanggil oleh sistem ketika pemain berhasil menghancurkan target (Alien).
+     * Mekanisme pembatalan gerak (Rollback).
+     * Dipanggil oleh ViewModel jika pemain terdeteksi menabrak batu/dinding.
+     * Pemain akan dipaksa mundur ke posisi sebelum tabrakan terjadi.
      */
-    public void addScore(int points) {
-        this.score += points;
+    public void rollback(int oldX, int oldY) {
+        this.x = oldX;
+        this.y = oldY;
     }
 
     /**
-     * Mencatat statistik ketangkasan pemain.
-     * Setiap kali peluru musuh lewat tanpa mengenai pemain, angka ini bertambah.
-     * Data ini penting untuk perhitungan bonus di akhir permainan.
+     * Logika Menembak Terarah (Mouse Aiming).
+     * * Di sinilah perhitungan Matematika Vektor terjadi.
+     * Player menghitung sudut antara posisinya sendiri dengan posisi kursor mouse,
+     * lalu menciptakan objek Peluru yang bergerak ke arah sudut tersebut.
+     *
+     * @param targetMouseX Koordinat X kursor mouse.
+     * @param targetMouseY Koordinat Y kursor mouse.
+     * @return Objek Bullet baru yang siap diluncurkan, atau null jika peluru habis.
      */
-    public void addAmmoMissed() {
-        this.ammoMissed++;
+    public Bullet shootAt(int targetMouseX, int targetMouseY) {
+        if (ammo <= 0) return null;
+
+        // Titik asal tembakan (dari tengah badan player)
+        double startX = this.x + 25;
+        double startY = this.y + 25;
+
+        // Mencari selisih jarak
+        double deltaX = targetMouseX - startX;
+        double deltaY = targetMouseY - startY;
+
+        // Menghitung sudut (Arc Tangent)
+        double angle = Math.atan2(deltaY, deltaX);
+
+        // Kecepatan peluru player
+        double bulletSpeed = 10.0;
+
+        // Memecah kecepatan menjadi komponen X dan Y
+        double velX = bulletSpeed * Math.cos(angle);
+        double velY = bulletSpeed * Math.sin(angle);
+
+        this.decreaseAmmo(); // Kurangi stok peluru
+
+        // Mengembalikan peluru baru ke ViewModel
+        return new Bullet((int)startX, (int)startY, 10, 20, null, false, velX, velY);
     }
 
-    // --- Metode Pengaturan Data (Setters untuk Fitur Load Game) ---
-    /*
-     * Saat pemain melanjutkan permainan (Continue), ViewModel akan mengambil data lama
-     * dari database dan memasukkannya ke objek Player menggunakan setter ini.
-     * Tanpa metode ini, status pemain akan selalu reset ke 0.
-     */
+    // --- Manajemen Statistik ---
 
-    public void setAmmo(int ammo) {
-        this.ammo = ammo;
-    }
-
-    public void setScore(int score) {
-        this.score = score;
-    }
-
-    public void setAmmoMissed(int ammoMissed) {
-        this.ammoMissed = ammoMissed;
-    }
-
-    // --- Metode Akses Data (Getters) ---
-    // Memberikan akses baca kepada komponen View (GameCanvas) untuk menampilkan
-    // status terkini di layar (Heads-Up Display / HUD).
+    public void addAmmo(int amount) { this.ammo += amount; }
+    public void decreaseAmmo() { if (this.ammo > 0) this.ammo--; }
+    public void addScore(int points) { this.score += points; }
+    public void addAmmoMissed() { this.ammoMissed++; }
 
     public int getAmmo() { return ammo; }
     public int getScore() { return score; }
     public int getAmmoMissed() { return ammoMissed; }
+
+    // Setter khusus untuk fitur Load Game (mengembalikan status lama)
+    public void setAmmo(int ammo) { this.ammo = ammo; }
+    public void setScore(int score) { this.score = score; }
+    public void setAmmoMissed(int ammoMissed) { this.ammoMissed = ammoMissed; }
 }

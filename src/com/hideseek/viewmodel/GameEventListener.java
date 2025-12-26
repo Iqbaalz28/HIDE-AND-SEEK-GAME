@@ -1,34 +1,31 @@
 package com.hideseek.viewmodel;
 
 /**
- * Interface ini berfungsi sebagai "Kontrak Komunikasi" antara ViewModel dan View.
+ * Interface Pendengar Acara Permainan (Game Event Listener).
  *
- * Dalam pola MVVM (Model-View-ViewModel), ViewModel tidak boleh tahu secara langsung
- * siapa View-nya (decoupling). Oleh karena itu, ViewModel menggunakan interface ini
- * untuk mengirim sinyal atau notifikasi kejadian penting tanpa perlu memanggil
- * kelas GameCanvas secara langsung.
+ * Mengapa kita butuh ini?
+ * Dalam pola MVVM Strict, ViewModel tidak boleh "memegang" atau bergantung langsung
+ * pada kelas View (GameCanvas). Jika ViewModel tahu tentang GameCanvas, itu disebut "Tight Coupling".
+ *
+ * Solusinya: ViewModel hanya berbicara melalui Interface ini.
+ * View (GameCanvas) nanti akan "menandatangani kontrak" (implements) interface ini.
+ * Jadi, ViewModel cukup berteriak "onGameUpdate!", dan siapa pun yang mendengarkan (View)
+ * akan merespons.
  */
 public interface GameEventListener {
-    /**
-     * Sinyal Pembaruan Layar (Frame Update).
-     *
-     * Metode ini dipanggil oleh ViewModel setiap kali satu putaran logika game (tick) selesai.
-     * Tujuannya adalah memberitahu View bahwa posisi pemain, musuh, atau peluru
-     * telah berubah, sehingga View harus segera menggambar ulang (repaint) layar
-     * agar animasi terlihat mulus.
-     */
-
-    void onGameUpdate(); // Dipanggil setiap frame (tick) untuk repaint layar
 
     /**
-     * Sinyal Permainan Berakhir (Game Over).
-     *
-     * Metode ini dipanggil oleh ViewModel ketika kondisi kalah terpenuhi
-     * (misalnya: Pemain bertabrakan dengan Alien).
-     *
-     * @param finalScore Skor terakhir yang didapat pemain saat kalah.
-     * Data ini dikirim agar View bisa menampilkannya di pesan pop-up
-     * dan menyimpannya ke database.
+     * Sinyal Detak Jantung Permainan (Tick).
+     * Dipanggil oleh ViewModel setiap kali posisi objek berubah (sekitar 60 kali sedetik).
+     * Memberitahu View bahwa "Data sudah berubah, tolong gambar ulang layar sekarang."
      */
-    void onGameOver(int finalScore); // Dipanggil saat game berakhir
+    void onGameUpdate();
+
+    /**
+     * Sinyal Permainan Berakhir.
+     * Dipanggil saat kondisi kalah terpenuhi (Pemain tertabrak Alien).
+     *
+     * @param finalScore Skor terakhir yang didapat untuk ditampilkan di pesan Game Over.
+     */
+    void onGameOver(int finalScore);
 }

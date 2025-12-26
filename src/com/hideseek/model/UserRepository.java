@@ -5,12 +5,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Kelas Repository (Bagian dari Layer Model).
- * Bertugas menangani operasi CRUD database secara langsung.
+ * Repository Pengguna.
+ * * Kelas ini bertindak sebagai perantara (Middleman) antara Database dan Aplikasi.
+ * Di sinilah semua sintaks SQL (SELECT, INSERT, UPDATE) ditulis.
+ * Tujuannya agar ViewModel tetap bersih dan tidak tercemar oleh kode SQL.
  */
 public class UserRepository {
 
-    // Mengambil semua data untuk tabel Highscore
+    // Mengambil daftar semua pemain untuk Highscore (Leaderboard)
     public List<UserStats> getAllUsers() {
         List<UserStats> userList = new ArrayList<>();
         DB db = null;
@@ -20,6 +22,7 @@ public class UserRepository {
             ResultSet rs = db.createQuery(sql);
 
             while (rs.next()) {
+                // Mengonversi baris data mentah menjadi objek Java
                 UserStats user = new UserStats(
                         rs.getString("username"),
                         rs.getInt("skor"),
@@ -36,9 +39,9 @@ public class UserRepository {
         return userList;
     }
 
-    // Mengambil data satu user
+    // Mengambil data spesifik satu pemain (untuk fitur Load Game)
     public UserStats getUserByUsername(String username) {
-        UserStats stats = new UserStats(username, 0, 0, 0);
+        UserStats stats = new UserStats(username, 0, 0, 0); // Default jika user baru
         DB db = null;
         try {
             db = new DB();
@@ -57,7 +60,7 @@ public class UserRepository {
         return stats;
     }
 
-    // Mendaftarkan user baru
+    // Mendaftarkan username baru ke sistem jika belum ada
     public void registerUser(String username) {
         DB db = null;
         try {
@@ -77,7 +80,7 @@ public class UserRepository {
         }
     }
 
-    // Update skor
+    // Menyimpan progres permainan terakhir (Save Game)
     public void updateUserStats(String username, int score, int missed, int ammo) {
         DB db = null;
         try {

@@ -5,7 +5,9 @@ import java.io.File;
 import java.io.IOException;
 
 /**
- * Kelas Helper untuk memutar efek suara (SFX).
+ * Utilitas Pemutar Suara.
+ * * Kelas sederhana untuk menangani efek suara (SFX) dalam game.
+ * Menggunakan library bawaan Java Sound API.
  */
 public class Sound {
 
@@ -13,25 +15,23 @@ public class Sound {
     }
 
     /**
-     * Memutar file suara satu kali.
-     * @param filename Nama file beserta ekstensinya (contoh: "sfx_laser1.wav")
+     * Memainkan klip audio satu kali (One-shot).
+     * @param filename Nama file di folder assets/Sounds.
      */
     public void play(String filename) {
         try {
-            // Mengambil file dari folder assets
-            // Path relatif dimulai dari root project
             File soundFile = new File("assets/Sounds/" + filename);
 
             if (soundFile.exists()) {
                 AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(soundFile);
                 Clip clip = AudioSystem.getClip();
                 clip.open(audioInputStream);
-                clip.start(); // Mainkan suara
+                clip.start();
             } else {
-                System.out.println("File suara tidak ditemukan: " + filename);
+                System.out.println("File suara hilang: " + filename);
             }
         } catch (UnsupportedAudioFileException e) {
-            System.out.println("Format audio tidak didukung. Harap gunakan .WAV");
+            System.out.println("Format audio tidak didukung. Gunakan .WAV");
         } catch (IOException | LineUnavailableException e) {
             e.printStackTrace();
         }
