@@ -160,7 +160,7 @@ public class GameViewModel implements Runnable {
 
         // Beritahu View
         if (eventListener != null) {
-            eventListener.onGameOver(player.getScore());
+            eventListener.onGameOver(player.getScore(), player.getAmmoMissed());
         }
     }
 

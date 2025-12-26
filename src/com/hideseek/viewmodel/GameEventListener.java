@@ -27,5 +27,5 @@ public interface GameEventListener {
      *
      * @param finalScore Skor terakhir yang didapat untuk ditampilkan di pesan Game Over.
      */
-    void onGameOver(int finalScore);
+    void onGameOver(int finalScore, int ammoMissed);
 }

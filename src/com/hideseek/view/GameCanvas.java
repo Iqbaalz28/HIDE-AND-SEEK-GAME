@@ -130,9 +130,14 @@ public class GameCanvas extends JPanel implements GameEventListener, KeyListener
         // --- LAYER 3: HUD (Interface) ---
         g.setColor(Color.WHITE);
         g.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        // Baris 1: Username
         g.drawString("Player: " + (currentUsername != null ? currentUsername : "Guest"), 15, 25);
+        // Baris 2: Skor
         g.drawString("Skor: " + p.getScore(), 15, 45);
+        // Baris 3: Sisa Peluru
         g.drawString("Peluru: " + p.getAmmo(), 15, 65);
+        // Baris 4: Peluru Meleset
+        g.drawString("Meleset: " + p.getAmmoMissed(), 15, 85);
 
         // Instruksi
         g.drawString("[WASD / Panah] Bergerak", 580, 25);
@@ -148,13 +153,14 @@ public class GameCanvas extends JPanel implements GameEventListener, KeyListener
     }
 
     @Override
-    public void onGameOver(int finalScore) {
-        // BERSIH: Tidak ada logika database di sini.
-        // ViewModel sudah melakukan penyimpanan data di belakang layar.
-        // View hanya bertugas menampilkan notifikasi.
+    public void onGameOver(int finalScore, int ammoMissed) {
+        // Kita menyusun pesan string dengan data baru 'ammoMissed'
+        String message = "Game Over!\n" +
+                "Skor Akhir: " + finalScore + "\n" +
+                "Peluru Meleset: " + ammoMissed + "\n" +
+                "Progres Anda telah disimpan otomatis.";
 
-        JOptionPane.showMessageDialog(this,
-                "Game Over!\nSkor Akhir: " + finalScore + "\nProgres Anda telah disimpan otomatis.");
+        JOptionPane.showMessageDialog(this, message);
 
         parentWindow.showMenu();
     }
