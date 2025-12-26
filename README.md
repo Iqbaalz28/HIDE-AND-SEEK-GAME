@@ -1,7 +1,7 @@
 # Hide and Seek: The Challenge
 
 ## Janji
-Saya Iqbal Rizky Maulana dengan NIM 2408622 mengerjakan TMD dalam mata kuliah Desain dan Pemrograman Berorientasi Objek untuk keberkahanNya maka saya tidak melakukan kecurangan seperti yang telah dispesifikasikan. Aamiin.
+Saya Iqbal Rizky Maulana dengan NIM 2408622 mengerjakan TMD (Tugas Masa Depan) dalam mata kuliah Desain dan Pemrograman Berorientasi Objek untuk keberkahanNya maka saya tidak melakukan kecurangan seperti yang telah dispesifikasikan. Aamiin.
 
 ## 1. Pendahuluan
 
@@ -188,4 +188,8 @@ E:.
 3.  **Menjalankan Aplikasi:**
     * Buka project di IDE.
     * Jalankan file `src/com/hideseek/main/Main.java`.
+    * Atau compile secara manual di CMD dengan perintah: (dapat disesuaikan dengan path direktori project disimpan)
+      ```
+      if not exist bin mkdir bin && javac -d bin -cp "lib\*" src\com\hideseek\main\*.java src\com\hideseek\model\*.java src\com\hideseek\view\*.java src\com\hideseek\viewmodel\*.java && java -cp "bin;lib\*" com.hideseek.main.Main
+      ```
 
