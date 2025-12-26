@@ -3,8 +3,12 @@ package com.hideseek.view;
 import com.hideseek.viewmodel.MenuViewModel;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 /**
  * Kelas ini merepresentasikan tampilan "Menu Utama" (Dashboard) dari aplikasi.
@@ -20,97 +24,111 @@ public class MainMenuPanel extends JPanel {
     private JTextField usernameField; // Kotak input untuk mengetik nama
     private JButton playButton;       // Tombol aksi untuk memulai
     private JTable scoreTable;        // Tabel untuk menampilkan data statistik
-
-    // ViewModel khusus menu yang menangani pengambilan data dari database
-    private MenuViewModel viewModel;
+    private MenuViewModel viewModel;  // ViewModel khusus menu yang menangani pengambilan data dari database
 
     /**
      * Konstruktor Panel Menu.
-     * Di sini kita menyusun tata letak visual menggunakan strategi 'BorderLayout'.
-     * Layout ini membagi layar menjadi 5 area (Atas, Bawah, Kiri, Kanan, Tengah),
-     * yang sangat cocok untuk struktur menu standar.
-     *
      * @param playAction Aksi (Logika) yang akan dijalankan saat tombol START ditekan.
      * Logika ini dikirim dari GameWindow, sehingga panel ini tidak perlu
      * tahu detail teknis perpindahan halaman.
      */
     public MainMenuPanel(ActionListener playAction) {
-        // Inisialisasi ViewModel untuk komunikasi database
-        this.viewModel = new MenuViewModel();
+        this.viewModel = new MenuViewModel();               // Inisialisasi ViewModel untuk komunikasi database
+        this.setLayout(new BorderLayout());                 // Mengatur tata letak utama dan warna latar belakang
+        this.setBackground(new Color(33, 37, 41)); // Warna abu-abu gelap agar nyaman di mata
 
-        // Mengatur tata letak utama dan warna latar belakang
-        this.setLayout(new BorderLayout());
-        this.setBackground(new Color(30, 30, 30)); // Warna abu-abu gelap agar nyaman di mata
-
-        // --- BAGIAN 1: Judul (BorderLayout.NORTH) ---
+        // --- BAGIAN 1: Judul ---
         // Menempatkan teks judul besar di bagian paling atas panel.
         JLabel titleLabel = new JLabel("HIDE AND SEEK: THE CHALLENGE", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Verdana", Font.BOLD, 24));
-        titleLabel.setForeground(Color.CYAN); // Warna teks kontras (Cyan)
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        titleLabel.setForeground(new Color(13, 202, 240));
 
         // Memberikan jarak (padding) visual di sekitar judul agar tidak terlalu mepet.
-        titleLabel.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
-
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(30, 0, 30, 0));
         this.add(titleLabel, BorderLayout.NORTH);
 
-        // --- BAGIAN 2: Tabel Skor (BorderLayout.CENTER) ---
-        // Menempatkan tabel skor di area tengah yang akan mengisi sisa ruang yang tersedia.
+        // --- 2. TABEL SKOR (Center) ---
+        // Kustomisasi Tabel agar terlihat modern (Flat Design)
         scoreTable = new JTable();
-        scoreTable.setFillsViewportHeight(true); // Memastikan tabel mengisi tinggi area
+        scoreTable.setRowHeight(30); // Baris lebih tinggi agar tidak sempit
+        scoreTable.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        scoreTable.setSelectionBackground(new Color(13, 202, 240)); // Warna saat diklik
+        scoreTable.setSelectionForeground(Color.BLACK);
+        scoreTable.setShowVerticalLines(false); // Menghilangkan garis vertikal (lebih bersih)
 
-        // Memuat data awal dari database agar tabel langsung terisi saat aplikasi dibuka.
-        refreshTable();
+        // Kustomisasi Header Tabel
+        JTableHeader header = scoreTable.getTableHeader();
+        header.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        header.setBackground(new Color(50, 50, 50));
+        header.setForeground(Color.WHITE);
+        header.setOpaque(true);
 
-        // Membungkus tabel dengan ScrollPane agar bisa digulir (scroll) jika datanya banyak.
+        // Mengatur perataan teks di tengah (Center Alignment) untuk sel tabel
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(JLabel.CENTER);
+        scoreTable.setDefaultRenderer(Object.class, centerRenderer);
+
+        refreshTable(); // Muat data
+
+        // FITUR BARU: Mouse Listener untuk Klik Tabel
+        // Saat pengguna mengklik baris tabel, username akan diambil dan dimasukkan ke TextField.
+        scoreTable.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int selectedRow = scoreTable.getSelectedRow();
+                if (selectedRow != -1) {
+                    // Mengambil data dari kolom ke-0 (Username)
+                    String selectedUser = scoreTable.getValueAt(selectedRow, 0).toString();
+                    usernameField.setText(selectedUser);
+                }
+            }
+        });
+
         JScrollPane scrollPane = new JScrollPane(scoreTable);
+        scrollPane.getViewport().setBackground(new Color(33, 37, 41)); // Menyamakan warna background
+        scrollPane.setBorder(BorderFactory.createEmptyBorder(10, 50, 10, 50)); // Margin kiri-kanan
         this.add(scrollPane, BorderLayout.CENTER);
 
-        // --- BAGIAN 3: Panel Input (BorderLayout.SOUTH) ---
-        // Area bawah membutuhkan tata letak sendiri karena berisi beberapa komponen
-        // (Label + Input + Tombol) yang berjejer ke samping.
-        // Kita menggunakan sub-panel dengan 'FlowLayout' untuk keperluan ini.
+        // --- 3. PANEL INPUT (South) ---
         JPanel inputPanel = new JPanel();
-        inputPanel.setLayout(new FlowLayout());
-        inputPanel.setBackground(new Color(50, 50, 50)); // Sedikit lebih terang dari background utama
+        inputPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 20, 20));
+        inputPanel.setBackground(new Color(40, 44, 52)); // Sedikit lebih terang dari background utama
+        inputPanel.setPreferredSize(new Dimension(800, 100));
 
-        // Label instruksi
-        JLabel userLabel = new JLabel("Username: ");
+        // Label
+        JLabel userLabel = new JLabel("Username:");
+        userLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
         userLabel.setForeground(Color.WHITE);
         inputPanel.add(userLabel);
 
-        // Kotak input teks
+        // Input Field dengan Padding
         usernameField = new JTextField(15);
+        usernameField.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        usernameField.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(Color.GRAY),
+                BorderFactory.createEmptyBorder(5, 5, 5, 5) // Padding dalam text field
+        ));
         inputPanel.add(usernameField);
 
-        // Tombol Mulai
+        // Tombol Start dengan gaya Modern
         playButton = new JButton("START GAME");
-        playButton.setBackground(Color.GREEN);
-        playButton.setFocusable(false); // Mematikan fokus agar tidak mengganggu navigasi keyboard
-
-        // Menghubungkan tombol dengan aksi yang dikirim dari GameWindow
+        playButton.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        playButton.setBackground(new Color(25, 135, 84)); // Hijau modern
+        playButton.setForeground(Color.WHITE);
+        playButton.setFocusable(false);
+        playButton.setBorder(BorderFactory.createEmptyBorder(10, 25, 10, 25)); // Padding tombol
+        playButton.setCursor(new Cursor(Cursor.HAND_CURSOR)); // Ubah kursor jadi tangan saat hover
         playButton.addActionListener(playAction);
+
         inputPanel.add(playButton);
 
-        // Menambahkan sub-panel input ke bagian bawah panel utama
         this.add(inputPanel, BorderLayout.SOUTH);
     }
 
-    /**
-     * Metode akses untuk mengambil teks yang diketik pengguna di kotak username.
-     * Digunakan oleh GameWindow untuk mendaftarkan pemain ke database sebelum game dimulai.
-     *
-     * @return String nama pengguna (tanpa spasi berlebih di awal/akhir).
-     */
     public String getUsername() {
         return usernameField.getText().trim();
     }
 
-    /**
-     * Metode untuk memperbarui tampilan tabel.
-     * Metode ini meminta ViewModel untuk mengambil data terbaru dari database,
-     * lalu memasangkannya ke tabel. Sangat berguna dipanggil setelah permainan selesai
-     * untuk menampilkan skor terbaru.
-     */
     public void refreshTable() {
         scoreTable.setModel(viewModel.getTableData());
     }

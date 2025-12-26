@@ -31,6 +31,7 @@ public class GameViewModel implements Runnable {
     private List<Image> alienImages;
     private List<Image> meteorImages;
     private Image playerImage;
+    private Sound soundEffect = new Sound();
 
     // --- Pengaturan Game & Threading ---
     private int screenWidth = 800;
@@ -178,7 +179,7 @@ public class GameViewModel implements Runnable {
 
         // Logika Probabilitas Spawn Alien.
         // Setiap frame memiliki peluang 2% untuk memunculkan alien baru.
-        if (random.nextInt(100) < 2) {
+        if (random.nextInt(300) < 2) {
             spawnAlien();
         }
 
@@ -297,6 +298,7 @@ public class GameViewModel implements Runnable {
             // 2. Deteksi Tabrakan dengan Pemain (Game Over).
             if (!hitRock && alien.getBounds().intersects(player.getBounds())) {
                 isRunning = false; // Hentikan game loop.
+                soundEffect.play("sfx_lose.wav");
                 if (eventListener != null) eventListener.onGameOver(player.getScore());
             }
 
@@ -307,8 +309,33 @@ public class GameViewModel implements Runnable {
             }
 
             // 4. Mekanisme Menembak: Alien memiliki peluang kecil untuk menembak balik.
-            if (random.nextInt(100) < 1) { // 1% kemungkinan per frame.
-                bullets.add(new Bullet(alien.getX() + 15, alien.getY(), 10, 20, null, true));
+            if (random.nextInt(200) < 1) { // 3% kemungkinan per frame.
+
+                // A. Tentukan titik asal peluru (tengah alien)
+                double startX = alien.getX() + 20;
+                double startY = alien.getY() + 20;
+
+                // B. Tentukan titik target (tengah player)
+                double targetX = player.getX() + 25;
+                double targetY = player.getY() + 25;
+
+                // C. Hitung selisih jarak (Delta)
+                double deltaX = targetX - startX;
+                double deltaY = targetY - startY;
+
+                // D. Hitung Sudut menggunakan Trigonometri (Arc Tangent)
+                double angle = Math.atan2(deltaY, deltaX);
+
+                // E. Tentukan Kecepatan Peluru Musuh
+                double bulletSpeed = 7.0;
+
+                // F. Pecah kecepatan menjadi komponen X dan Y berdasarkan sudut
+                double velX = bulletSpeed * Math.cos(angle);
+                double velY = bulletSpeed * Math.sin(angle);
+
+                // G. Buat peluru dengan vektor kecepatan tersebut
+                bullets.add(new Bullet((int)startX, (int)startY, 10, 20, null, true, velX, velY));
+                soundEffect.play("sfx_laser2.wav");
             }
         }
     }
@@ -322,60 +349,62 @@ public class GameViewModel implements Runnable {
      * - Memberikan reward jika peluru musuh berhasil dihindari.
      */
     private void updateBullets() {
-        int obstaclesDestroyedCount = 0; // Penghitung untuk respawn batu baru.
+        int obstaclesDestroyedCount = 0;
 
         Iterator<Bullet> it = bullets.iterator();
         while (it.hasNext()) {
             Bullet bullet = it.next();
-            boolean isBulletDead = false; // Penanda untuk menghapus peluru setelah benturan.
+            boolean isBulletDead = false;
 
-            // --- Logika Peluru Musuh (Bergerak ke Atas, Bahaya bagi Player) ---
+            // 1. GERAKKAN PELURU (Logika Baru)
+            // Metode ini akan mengupdate X dan Y peluru sesuai arah tembakan
+            bullet.move();
+
+            // --- Logika Peluru Musuh ---
             if (bullet.isEnemyBullet()) {
-                bullet.setY(bullet.getY() - 7);
-
-                // Reward System: Jika peluru musuh lewat layar atas tanpa kena pemain...
-                if (bullet.getY() + bullet.getHeight() < -20) {
-                    player.addAmmo(1);      // Pemain dapat tambahan peluru.
-                    player.addAmmoMissed(); // Statistik hindaran bertambah.
-                    it.remove();            // Hapus peluru.
+                // Hapus jika keluar layar (Kiri, Kanan, atau Bawah)
+                // Kita beri sedikit toleransi (margin) agar tidak hilang mendadak
+                if (bullet.getY() > screenHeight + 50 || bullet.getX() < -50 || bullet.getX() > screenWidth + 50) {
+                    // Jika peluru musuh berhasil lolos (keluar layar manapun), beri poin
+                    player.addAmmo(1);
+                    player.addAmmoMissed();
+                    it.remove();
                     continue;
                 }
 
-                // Cek Kena Player (Game Over).
+                // Cek Kena Player
                 if (bullet.getBounds().intersects(player.getBounds())) {
                     isRunning = false;
+                    soundEffect.play("sfx_lose.wav");
                     if (eventListener != null) eventListener.onGameOver(player.getScore());
                 }
             }
-            // --- Logika Peluru Pemain (Bergerak ke Bawah, Bahaya bagi Alien) ---
+            // --- Logika Peluru Player ---
             else {
-                bullet.setY(bullet.getY() + 7);
-
-                // Cek Kena Alien.
+                // Cek Kena Alien
                 Iterator<Alien> alienIt = aliens.iterator();
                 while (alienIt.hasNext()) {
                     Alien alien = alienIt.next();
                     if (bullet.getBounds().intersects(alien.getBounds())) {
-                        alienIt.remove();    // Alien hancur.
-                        player.addScore(10); // Tambah skor.
-                        isBulletDead = true; // Peluru hilang.
+                        alienIt.remove();
+                        player.addScore(10);
+                        isBulletDead = true;
+                        soundEffect.play("sfx_twoTone.wav");
                         break;
                     }
                 }
-                // Hapus peluru jika keluar layar bawah.
-                if (bullet.getY() > screenHeight) isBulletDead = true;
+                // Hapus jika keluar layar atas
+                if (bullet.getY() < -50) isBulletDead = true;
             }
 
-            // --- Logika Peluru Kena Batu (Berlaku untuk Kedua Jenis Peluru) ---
+            // --- Logika Kena Batu (Sama seperti sebelumnya) ---
             if (!isBulletDead) {
                 Iterator<Obstacle> obsIt = obstacles.iterator();
                 while (obsIt.hasNext()) {
                     Obstacle obs = obsIt.next();
                     if (bullet.getBounds().intersects(obs.getBounds())) {
-                        obs.hit();           // Kurangi HP batu.
-                        isBulletDead = true; // Peluru hancur.
-
-                        // Jika batu hancur total, hapus dan catat untuk respawn.
+                        obs.hit();
+                        isBulletDead = true;
                         if (obs.isDestroyed()) {
                             obsIt.remove();
                             obstaclesDestroyedCount++;
@@ -385,13 +414,12 @@ public class GameViewModel implements Runnable {
                 }
             }
 
-            // Eksekusi penghapusan peluru jika ditandai mati.
             if (isBulletDead) {
                 it.remove();
             }
         }
 
-        // Regenerasi Batu: Memastikan jumlah rintangan di layar tetap konsisten.
+        // Respawn batu... (kode lama tetap sama)
         for (int i = 0; i < obstaclesDestroyedCount; i++) {
             spawnSingleObstacle();
         }
@@ -409,10 +437,32 @@ public class GameViewModel implements Runnable {
      * Logika menembak bagi pemain.
      * Hanya bisa menembak jika stok peluru tersedia.
      */
-    public void playerShoot() {
+    public void playerShoot(int targetX, int targetY) {
         if (player.getAmmo() > 0) {
-            // Spawn peluru baru di depan pemain.
-            bullets.add(new Bullet(player.getX() + 20, player.getY() + player.getHeight(), 10, 20, null, false));
+            // 1. Menentukan titik pusat pemain sebagai asal tembakan.
+            // Ditambah 25 (setengah ukuran player 50x50) agar peluru keluar tepat dari tengah.
+            double startX = player.getX() + 25;
+            double startY = player.getY() + 25;
+
+            // 2. Menghitung selisih jarak antara target (mouse) dan pemain.
+            double deltaX = targetX - startX;
+            double deltaY = targetY - startY;
+
+            // 3. Menghitung sudut tembakan menggunakan Arc Tangent (Trigonometri).
+            double angle = Math.atan2(deltaY, deltaX);
+
+            // 4. Menentukan kecepatan peluru pemain.
+            double bulletSpeed = 10.0; // Lebih cepat dari peluru musuh agar responsif.
+
+            // 5. Memecah kecepatan menjadi komponen vektor X dan Y.
+            double velX = bulletSpeed * Math.cos(angle);
+            double velY = bulletSpeed * Math.sin(angle);
+
+            // 6. Membuat objek peluru dengan arah vektor yang telah dihitung.
+            bullets.add(new Bullet((int)startX, (int)startY, 10, 20, null, false, velX, velY));
+            soundEffect.play("sfx_laser1.wav");
+
+            // 7. Mengurangi amunisi.
             player.decreaseAmmo();
         }
     }
