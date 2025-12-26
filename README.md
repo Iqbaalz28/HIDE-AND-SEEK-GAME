@@ -208,5 +208,5 @@ E:.
     - Jalankan file `src/com/hideseek/main/Main.java`.
     - Atau compile secara manual di CMD dengan perintah: (dapat disesuaikan dengan path direktori project disimpan)
       ```
-      if not exist bin mkdir bin && javac -d bin -cp "lib\*" src\com\hideseek\main\*.java src\com\hideseek\model\*.java src\com\hideseek\view\*.java src\com\hideseek\viewmodel\*.java && java -cp "bin;lib\*" com.hideseek.main.Main
+      if not exist out mkdir out && javac -d out -cp "lib\*" src\com\hideseek\main\*.java src\com\hideseek\model\*.java src\com\hideseek\view\*.java src\com\hideseek\viewmodel\*.java && java -cp "out;lib\*" com.hideseek.main.Main
       ```
