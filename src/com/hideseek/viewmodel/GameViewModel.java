@@ -139,8 +139,6 @@ public class GameViewModel implements Runnable {
         }
     }
 
-    // --- LOGIKA UTAMA ---
-
     /**
      * Pusat penanganan Game Over.
      * * Sesuai prinsip MVVM, ViewModel-lah yang bertanggung jawab menyimpan data,
@@ -166,20 +164,24 @@ public class GameViewModel implements Runnable {
 
     private void updateGame() {
         // 1. Gerakkan Player
-        // ViewModel hanya meneruskan status input ke Model Player.
         int oldX = player.getX();
         int oldY = player.getY();
         player.move(isMovingLeft, isMovingRight, isMovingUp, isMovingDown, screenWidth, screenHeight);
 
         // 2. Cek Tabrakan Player vs Dinding/Batu
-        for (Obstacle obs : obstacles) {
+        boolean isCollided = false;
+        Iterator<Obstacle> obsIt = obstacles.iterator();
+        
+        // Loop berhenti jika list habis ATAU sudah terjadi tabrakan (isCollided true)
+        while (obsIt.hasNext() && !isCollided) {
+            Obstacle obs = obsIt.next();
             if (player.checkCollision(obs)) {
-                player.rollback(oldX, oldY); // Batalkan gerakan jika nabrak
-                break;
+                player.rollback(oldX, oldY);
+                isCollided = true;
             }
         }
 
-        // 3. Spawn Alien Secara Acak (Peluang 2%)
+        // 3. Spawn Alien
         if (random.nextInt(100) < 2) {
             spawnAlien();
         }
@@ -194,34 +196,31 @@ public class GameViewModel implements Runnable {
             Alien alien = it.next();
             int oldY = alien.getY();
 
-            // Alien bergerak sendiri (Logic ada di class Alien)
             alien.move();
 
             // Cek Alien nabrak Batu
             boolean hitRock = false;
-            for (Obstacle obs : obstacles) {
+            Iterator<Obstacle> obsIt = obstacles.iterator();
+            
+            while (obsIt.hasNext() && !hitRock) {
+                Obstacle obs = obsIt.next();
                 if (alien.checkCollision(obs)) {
-                    alien.setY(oldY); // Alien tertahan
+                    alien.setY(oldY);
                     hitRock = true;
-                    break;
                 }
             }
 
-            // Cek Alien nabrak Player (Game Over)
             if (!hitRock && alien.checkCollision(player)) {
                 handleGameOver();
                 return;
             }
 
-            // Hapus Alien jika lewat layar
             if (alien.getY() + alien.getHeight() < 0) {
                 it.remove();
                 continue;
             }
 
-            // Alien Menembak (Peluang 1 banding 300)
             if (random.nextInt(300) < 1) {
-                // Alien menghitung sendiri arah tembakannya ke Player
                 Bullet newBullet = alien.shootAt(player);
                 bullets.add(newBullet);
                 soundEffect.play("sfx_laser2.wav");
@@ -256,32 +255,29 @@ public class GameViewModel implements Runnable {
             } else {
                 // Peluru Player kena Alien
                 Iterator<Alien> alienIt = aliens.iterator();
-                while (alienIt.hasNext()) {
+                while (alienIt.hasNext() && !isBulletDead) {
                     Alien alien = alienIt.next();
                     if (bullet.checkCollision(alien)) {
-                        alienIt.remove();    // Alien Mati
+                        alienIt.remove();
                         player.addScore(10);
-                        isBulletDead = true;
+                        isBulletDead = true; // Flag ini menghentikan loop alienIt
                         soundEffect.play("sfx_twoTone.wav");
-                        break;
                     }
-                }
                 if (bullet.getY() < -50) isBulletDead = true;
             }
 
             // Cek Peluru kena Batu
             if (!isBulletDead) {
                 Iterator<Obstacle> obsIt = obstacles.iterator();
-                while (obsIt.hasNext()) {
+                while (obsIt.hasNext() && !isBulletDead) {
                     Obstacle obs = obsIt.next();
                     if (bullet.checkCollision(obs)) {
-                        obs.hit(); // Kurangi HP batu
-                        isBulletDead = true;
+                        obs.hit();
+                        isBulletDead = true; // Flag ini menghentikan loop obsIt
                         if (obs.isDestroyed()) {
                             obsIt.remove();
                             obstaclesDestroyedCount++;
                         }
-                        break;
                     }
                 }
             }
