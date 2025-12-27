@@ -263,6 +263,7 @@ public class GameViewModel implements Runnable {
                         isBulletDead = true; // Flag ini menghentikan loop alienIt
                         soundEffect.play("sfx_twoTone.wav");
                     }
+                }
                 if (bullet.getY() < -50) isBulletDead = true;
             }
 
